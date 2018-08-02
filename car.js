@@ -69,30 +69,32 @@ document.addEventListener('keyup', keyListener(false))
 
 // Collision Code
 
-const vecFromRotVeg = (x, y, rot) => (x * Math.cos(rot) + y * Math.sin(rot))
+const vecFromRotVec = (x, y, rot) => (x * Math.cos(rot) + y * Math.sin(rot))
 
 const generateCollisionBox = (car) => {
     const { pos: { x, y, rot } } = car;
     const br = {
-        x: x + vecFromRotVeg(cfg.CAR_HALF_WIDTH, -cfg.CAR_LENGTH_REAR_OFFSET, rot),
-        y: y + vecFromRotVeg(cfg.CAR_LENGTH_REAR_OFFSET, cfg.CAR_HALF_WIDTH, rot),
+        x: x + vecFromRotVec(cfg.CAR_HALF_WIDTH, -cfg.CAR_LENGTH_REAR_OFFSET, rot),
+        y: y + vecFromRotVec(cfg.CAR_LENGTH_REAR_OFFSET, cfg.CAR_HALF_WIDTH, rot),
     };
     const bl = {
-        x: x + vecFromRotVeg(-cfg.CAR_HALF_WIDTH, -cfg.CAR_LENGTH_REAR_OFFSET, rot),
-        y: y + vecFromRotVeg(cfg.CAR_LENGTH_REAR_OFFSET, -cfg.CAR_HALF_WIDTH, rot),
+        x: x + vecFromRotVec(-cfg.CAR_HALF_WIDTH, -cfg.CAR_LENGTH_REAR_OFFSET, rot),
+        y: y + vecFromRotVec(cfg.CAR_LENGTH_REAR_OFFSET, -cfg.CAR_HALF_WIDTH, rot),
     };
     const fl = {
-        x: x + vecFromRotVeg(-cfg.CAR_HALF_WIDTH, cfg.CAR_LENGTH_FRONT_OFFSET, rot),
-        y: y + vecFromRotVeg(-cfg.CAR_LENGTH_FRONT_OFFSET, -cfg.CAR_HALF_WIDTH, rot),
+        x: x + vecFromRotVec(-cfg.CAR_HALF_WIDTH, cfg.CAR_LENGTH_FRONT_OFFSET, rot),
+        y: y + vecFromRotVec(-cfg.CAR_LENGTH_FRONT_OFFSET, -cfg.CAR_HALF_WIDTH, rot),
     };
     const fr = {
-        x: x + vecFromRotVeg(cfg.CAR_HALF_WIDTH, cfg.CAR_LENGTH_FRONT_OFFSET, rot),
-        y: y + vecFromRotVeg(-cfg.CAR_LENGTH_FRONT_OFFSET, cfg.CAR_HALF_WIDTH, rot),
+        x: x + vecFromRotVec(cfg.CAR_HALF_WIDTH, cfg.CAR_LENGTH_FRONT_OFFSET, rot),
+        y: y + vecFromRotVec(-cfg.CAR_LENGTH_FRONT_OFFSET, cfg.CAR_HALF_WIDTH, rot),
     };
-    car.frontLine = { p1: fl, p2: fr };
-    car.leftLine = { p1: fl, p2: bl };
-    car.rightLine = { p1: fr, p2: br };
-    car.backLine = { p1: br, p2: bl };
+    const frontLine = { p1: fl, p2: fr };
+    const leftLine = { p1: fl, p2: bl };
+    const rightLine = { p1: fr, p2: br };
+    const backLine = { p1: br, p2: bl };
+
+    car.sides = [frontLine, leftLine, rightLine, backLine];
 };
 
 const linesIntersect = ({
@@ -103,53 +105,23 @@ const linesIntersect = ({
     p2: { x: r, y: s },
 }) => {
     const det = (c - a) * (s - q) - (r - p) * (d - b);
-
-    if (det === 0) return false;
+    if (!det) return false;
 
     const lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
     const gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
 };
 
-const hit = ({
-    frontLine,
-    backLine,
-    leftLine,
-    rightLine,
-}, {
-    frontLine: frontLine2,
-    backLine: backLine2,
-    leftLine: leftLine2,
-    rightLine: rightLine2,
-}) => (
-    linesIntersect(frontLine, frontLine2) ||
-    linesIntersect(frontLine, leftLine2) ||
-    linesIntersect(frontLine, rightLine2) ||
-    linesIntersect(frontLine, backLine2) ||
-    
-    linesIntersect(leftLine, frontLine2) ||
-    linesIntersect(leftLine, leftLine2) ||
-    linesIntersect(leftLine, rightLine2) ||
-    linesIntersect(leftLine, backLine2) ||
-    
-    linesIntersect(rightLine, frontLine2) ||
-    linesIntersect(rightLine, leftLine2) ||
-    linesIntersect(rightLine, rightLine2) ||
-    linesIntersect(rightLine, backLine2) ||
-    
-    linesIntersect(backLine, frontLine2) ||
-    linesIntersect(backLine, leftLine2) ||
-    linesIntersect(backLine, rightLine2) ||
-    linesIntersect(backLine, backLine2)
-)
+const hit = ({ sides }, { sides: sides2 }) =>
+    sides.find(car1side =>
+        sides2.find(car2side => linesIntersect(car1side, car2side))
+    );
 
 const runCollisions = () => {
     generateCollisionBox(PlayerCar);
     generateCollisionBox(cars[0]);
 
-    if (hit(PlayerCar, cars[0])) {
-        console.log('hit');
-    }
+    if (hit(PlayerCar, cars[0])) console.log('hit');
 }
 
 // Calculate Input Code
